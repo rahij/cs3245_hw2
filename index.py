@@ -35,7 +35,7 @@ def index_docs(documents_dir, dict_file, postings_file):
     postings_file_writer.write(str(doc_list) + "\n")
 
 def usage():
-  print "usage: " + sys.argv[0] + " -b input-file-for-building-LM -t input-file-for-testing-LM -o output-file"
+  print "usage: " + sys.argv[0] + " -i training-doc-directory -d out-file-for-dictionary -p output-file-for-postings-list"
 
 documents_dir = dict_file = postings_file = None
 try:
