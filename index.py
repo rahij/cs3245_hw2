@@ -10,6 +10,7 @@ import os.path
 def index_docs(documents_dir, dict_file, postings_file):
   stemmer = nltk.stem.porter.PorterStemmer()
   dict_file_writer = open(dict_file, "w")
+  postings_file_writer = open(postings_file, "w")
   doc_id = 0;
   indexer = {}
   file_list = os.listdir(documents_dir)
@@ -29,7 +30,9 @@ def index_docs(documents_dir, dict_file, postings_file):
             indexer[token].append(int(file_name))
     doc_id = doc_id + 1
   for token, doc_list in indexer.iteritems():
-    dict_file_writer.write(token + " " + str(doc_list) + "\n")
+    current_position = postings_file_writer.tell()
+    dict_file_writer.write(token + " " + str(current_position) + "\n")
+    postings_file_writer.write(str(doc_list) + "\n")
 
 def usage():
   print "usage: " + sys.argv[0] + " -b input-file-for-building-LM -t input-file-for-testing-LM -o output-file"
