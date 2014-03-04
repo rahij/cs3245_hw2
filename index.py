@@ -28,7 +28,7 @@ def get_tokens_from_line(line):
 
 def write_doc_id_to_file(token, doc_id):
   token_file_path=TOKEN_FILES_DIR + token
-  print token_file_path + "\n"
+  print token_file_path
   prepend_char = ""
   if not os.path.isfile(token_file_path):
     dict_token_writer = open(token_file_path, "w")
@@ -77,14 +77,6 @@ def index_docs(documents_dir, dict_file, postings_file):
           write_doc_id_to_file(token, file_name)
 
   append_all_files_to_dict()
-          # if token not in indexer:
-          #   indexer[token] = []
-          # if int(file_name) not in indexer[token]:
-          #   indexer[token].append(int(file_name))
-  # for token, doc_list in indexer.iteritems():
-  #   current_position = postings_file_writer.tell()
-  #   dict_file_writer.write(token + " " + str(current_position) + "\n")
-  #   postings_file_writer.write(str(doc_list) + "\n")
 
 def usage():
   print "usage: " + sys.argv[0] + " -i training-doc-directory -d out-file-for-dictionary -p output-file-for-postings-list"
