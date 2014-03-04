@@ -7,7 +7,7 @@ def search_query():
   print "test"
 
 def usage():
-  print "usage: " + sys.argv[0] + " -i training-doc-directory -d out-file-for-dictionary -p output-file-for-postings-list"
+  print "usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results"
 
 documents_dir = dict_file = postings_file = None
 try:
@@ -16,15 +16,16 @@ except getopt.GetoptError, err:
   usage()
   sys.exit(2)
 for o, a in opts:
-  if o == '-i':
-    documents_dir = a
-  elif o == '-d':
+  if o == '-d':
     dict_file = a
   elif o == '-p':
     postings_file = a
+  elif o == '-q':
+    query_file = a
+  elif o == '-o':
+      output_file = a
   else:
     assert False, "unhandled option"
 if documents_dir == None or dict_file == None or postings_file == None:
   usage()
   sys.exit(2)
-
