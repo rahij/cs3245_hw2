@@ -1,0 +1,30 @@
+apple
+bill
+car
+dog
+eggs
+fake
+Gates
+hello
+interesting
+money
+nothing
+pine
+show
+vista
+windows
+NOT apple
+NOT bill
+NOT car
+NOT dog
+NOT eggs
+NOT fake
+NOT Gates
+NOT hello
+NOT interesting
+NOT money
+NOT nothing
+NOT pine
+NOT show
+NOT vista
+NOT windows
