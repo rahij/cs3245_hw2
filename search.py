@@ -16,22 +16,26 @@ def parse_dictionary_file_entry(entry):
   assert doesStringContainOnlyDigits(file_entry_list_by_whitespace[1])
   return file_entry_list_by_whitespace
 
-def store_entry_in_dictionary(entry, dictionary):
+def store_entry_in_dictionary(entry):
   term_pointer_list = parse_dictionary_file_entry(entry)
   term = term_pointer_list[0]
   file_pointer = term_pointer_list[1]
   dictionary[term] = file_pointer
 
-def store_dictionary_in_memory_and_return_it(dict_file_path):
-  dict_file = open(dict_file_path, 'r')
+def store_dictionary_in_memory_and_return_it(dict_file):
+  dict_file_reader = open(dict_file, 'r')
   dictionary = {}
-  for dict_entry in dict_file:
-    store_entry_in_dictionary(dict_entry, dictionary)
+  for token in dict_file_reader.readlines():
+    store_entry_in_dictionary(token)
+  dict_file_reader.close()
   return dictionary
 
-def get_doc_ids_from_postings_file_at_pointer(postings_file, file_pointer):
-  postings_file_read_position = postings_file.seek(file_pointer)
-  return postings_file.readline().strip()
+def get_doc_ids_from_postings_file_at_pointer(file_pointer):
+  postings_file_reader = open(postings_file, "r")
+  postings_file_read_position = postings_file_reader.seek(file_pointer)
+  doc_ids = postings_file_reader.readline().strip()
+  postings_file_reader.close()
+  return doc_ids
 
 def write_to_output_file(line):
   prepend_char = "\n"
@@ -42,20 +46,20 @@ def write_to_output_file(line):
     output_writer = open(output_file, "a")
   output_writer.write(prepend_char + line)
 
-def perform_query(query, dictionary, postings_file):
+def perform_query(query):
   if query in dictionary:
     postings_file_pointer_for_query_term = int(dictionary[query])
-    doc_ids_string = get_doc_ids_from_postings_file_at_pointer(postings_file, postings_file_pointer_for_query_term)
+    doc_ids_string = get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
   else:
     doc_ids_string = ''
   write_to_output_file(doc_ids_string)
 
-def perform_queries(query_file_path, dictionary, postings_file_path):
-  query_file = open(query_file_path, 'r')
-  postings_file = open(postings_file_path, 'r')
-  for query in query_file:
+def perform_queries():
+  query_file_reader = open(query_file, 'r')
+  postings_file_reader = open(postings_file, 'r')
+  for query in query_file_reader.readlines():
     query = query.strip()
-    perform_query(query, dictionary, postings_file)
+    perform_query(query)
 
 dict_file = postings_file = query_file = output_file = None
 try:
@@ -78,4 +82,4 @@ if query_file == None or dict_file == None or postings_file == None or output_fi
   usage()
   sys.exit(2)
 dictionary = store_dictionary_in_memory_and_return_it(dict_file)
-perform_queries(query_file, dictionary, postings_file)
+perform_queries()
