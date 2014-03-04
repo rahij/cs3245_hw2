@@ -24,7 +24,6 @@ def store_entry_in_dictionary(entry):
 
 def store_dictionary_in_memory_and_return_it(dict_file):
   dict_file_reader = open(dict_file, 'r')
-  dictionary = {}
   for token in dict_file_reader.readlines():
     store_entry_in_dictionary(token)
   dict_file_reader.close()
@@ -33,7 +32,7 @@ def store_dictionary_in_memory_and_return_it(dict_file):
 def get_doc_ids_from_postings_file_at_pointer(file_pointer):
   postings_file_reader = open(postings_file, "r")
   postings_file_read_position = postings_file_reader.seek(file_pointer)
-  doc_ids = postings_file_reader.readline().strip()
+  doc_ids = postings_file_reader.readline().strip().split()
   postings_file_reader.close()
   return doc_ids
 
@@ -46,10 +45,27 @@ def write_to_output_file(line):
     output_writer = open(output_file, "a")
   output_writer.write(prepend_char + line)
 
+def get_doc_ids_for_token(token):
+  if query in dictionary:
+    postings_file_pointer_for_query_term = int(dictionary[query])
+    doc_ids = get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
+  else:
+    doc_ids_string = []
+
+def execute_and_operation(a, b):
+  # to be replaced by skip pointers
+  return list(set([1,2,3]) & set([3,4,5]))
+
+def execute_or_operation(a, b):
+  return list(set(a + b))
+
+def execute_not_operation(parent_list, to_be_excluded_list):
+  return [x for x in a if x not in b]
+
 def perform_query(query):
   if query in dictionary:
     postings_file_pointer_for_query_term = int(dictionary[query])
-    doc_ids_string = get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
+    doc_ids_string = str(get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term))
   else:
     doc_ids_string = ''
   write_to_output_file(doc_ids_string)
@@ -81,5 +97,7 @@ for o, a in opts:
 if query_file == None or dict_file == None or postings_file == None or output_file == None:
   usage()
   sys.exit(2)
+
+dictionary = {}
 dictionary = store_dictionary_in_memory_and_return_it(dict_file)
 perform_queries()
