@@ -15,40 +15,57 @@ def create_dict_dir():
   if not os.path.exists(TOKEN_FILES_DIR):
     os.makedirs(TOKEN_FILES_DIR)
 
-def get_tokens_from_line(line):
+def stem_and_normalize_tokens(token_list):
   stemmer = nltk.stem.porter.PorterStemmer()
-  token_list = map(lambda x: x.lower(),filter(lambda word: word not in ',-.&\"\'', [word for sent in sent_tokenize(line) for word in word_tokenize(sent)]))
-  for token in token_list:
+  normalized_list = []
+  for i in xrange(len(token_list)):
+    token = stemmer.stem(token_list[i])
     if "/" in token:
-      token_list.remove(token)
-      token_list.append(token.split('/')[0])
-      token_list.append(token.split('/')[1])
-    token = stemmer.stem(token)
+      for t in token.split('/'):
+        normalized_list.append(t)
+    else:
+      normalized_list.append(token)
+  return [x for x in normalized_list if x]
+
+def get_tokens_from_line(line):
+  token_list = map(lambda x: x.lower(),filter(lambda word: word not in ',-.&()\"\'', [word for sent in sent_tokenize(line) for word in word_tokenize(sent)]))
+  token_list = stem_and_normalize_tokens(token_list)
   return token_list
 
 def write_doc_id_to_file(token, doc_id):
   token_file_path=TOKEN_FILES_DIR + token
-  print token_file_path
-  prepend_char = ""
   if not os.path.isfile(token_file_path):
     dict_token_writer = open(token_file_path, "w")
+    dict_token_writer.write(doc_id)
   else:
-    dict_token_writer = open(token_file_path, "a")
-    prepend_char = " "
-
-  dict_token_writer.write(prepend_char + doc_id)
+    dict_token_reader = open(token_file_path, "r")
+    list_of_doc_ids = dict_token_reader.readline().split()
+    if doc_id not in list_of_doc_ids:
+      dict_token_writer = open(token_file_path, "a")
+      dict_token_writer.write(" " + doc_id)
 
 
 def get_list_of_files_to_index():
-  file_list = os.listdir(documents_dir)[0:NUM_FILES_TO_INDEX]
-  return file_list
+  file_list = os.listdir(documents_dir)
+  file_list.sort(key=int)
+  return file_list[0:NUM_FILES_TO_INDEX]
 
 def get_list_of_token_files():
   file_list = os.listdir(TOKEN_FILES_DIR)
   return file_list
 
-def sort_line(l):
-  return l
+def insert_skip_pointers(l):
+  l = l.split()
+  if len(l) > 10:
+    idx = 0
+    skip_distance = int(math.floor(math.sqrt(len(l))))
+    while idx < len(l):
+      if idx + skip_distance >= len(l):
+        l[idx] += ",-1"
+      else:
+        l[idx] += "," + l[idx + skip_distance]
+      idx += skip_distance
+  return ' '.join(l)
 
 def append_all_files_to_dict():
   dict_file_writer = open(dict_file, "w")
@@ -58,7 +75,7 @@ def append_all_files_to_dict():
     in_file = TOKEN_FILES_DIR + file_name
     with open(in_file) as f:
       file_pointer = postings_file_writer.tell()
-      doc_ids = sort_line(f.readline())
+      doc_ids = insert_skip_pointers(f.readline())
       postings_file_writer.write(doc_ids + "\n")
       dict_file_writer.write(file_name + " " + str(file_pointer) + "\n")
 
