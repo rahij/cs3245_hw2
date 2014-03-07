@@ -16,24 +16,20 @@ PREFIX_PARANTHESIS = "PARANTHESIS_"
 REGEX_PREFIX_PARANTHESIS = "(?<=PARANTHESIS_).*"
 POINTER_DOCUMENTS_ALL = 0
 
-list_query_parantheses_results = []
-
 def get_list_of_all_doc_ids():
   return get_doc_ids_from_postings_file_at_pointer(POINTER_DOCUMENTS_ALL)
 
 def usage():
   print "usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results"
 
-def doesStringContainOnlyDigits(inputString):
-  return all(char.isdigit() for char in inputString)
-
 def parse_dictionary_file_entry(entry):
   file_entry_list_by_whitespace = entry.split()
-  assert len(file_entry_list_by_whitespace) == 2
-  assert doesStringContainOnlyDigits(file_entry_list_by_whitespace[1])
   return file_entry_list_by_whitespace
 
 def store_entry_in_dictionary(entry):
+  """
+  Stores dictionary in memory
+  """
   term_pointer_list = parse_dictionary_file_entry(entry)
   term = term_pointer_list[0]
   file_pointer = term_pointer_list[1]
@@ -47,6 +43,9 @@ def store_dictionary_in_memory_and_return_it(dict_file):
   return dictionary
 
 def does_doc_id_contain_skip_pointer(doc_id):
+  """
+  Checks if a postings list term contains a skip pointer
+  """
   return (',' in doc_id)
 
 def get_doc_id_from_doc_id_and_skip_pointer(doc_id):
@@ -65,6 +64,9 @@ def get_doc_ids_from_postings_file_at_pointer(file_pointer):
   return doc_ids
 
 def write_to_output_file(line):
+  """
+  Writes result line to output file
+  """
   prepend_char = "\n"
   if not os.path.isfile(output_file):
     output_writer = open(output_file, "w")
@@ -74,6 +76,9 @@ def write_to_output_file(line):
   output_writer.write(prepend_char + line)
 
 def get_doc_ids_for_token(token):
+  """
+  Given a token, returns all doc_ids from the postings list
+  """
   doc_ids = []
   if query in dictionary:
     postings_file_pointer_for_query_term = int(dictionary[query])
@@ -117,8 +122,6 @@ def get_substrings_enclosed_in_brackets(str):
 
 def get_index_of_bracketed_query(query):
   matches = re.findall(REGEX_PREFIX_PARANTHESIS, query)
-  assert len(matches) == 1
-  assert doesStringContainOnlyDigits(matches[0])
   return int(matches[0])
 
 def get_expression_in_front_of_NOT(query):
@@ -127,6 +130,9 @@ def get_expression_in_front_of_NOT(query):
   return matches[0]
 
 def perform_query(query):
+  """
+  Recursively evaluates query based on rank of precedence
+  """
   global list_query_parantheses_results
   if are_there_brackets_in_expression(query):
     list_of_expressions_in_bracket = get_substrings_enclosed_in_brackets(query)
