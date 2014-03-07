@@ -16,8 +16,6 @@ PREFIX_PARANTHESIS = "PARANTHESIS_"
 REGEX_PREFIX_PARANTHESIS = "(?<=PARANTHESIS_).*"
 POINTER_DOCUMENTS_ALL = 0
 
-list_query_parantheses_results = []
-
 def get_list_of_all_doc_ids():
   return get_doc_ids_from_postings_file_at_pointer(POINTER_DOCUMENTS_ALL)
 
