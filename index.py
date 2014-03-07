@@ -11,6 +11,8 @@ import shutil
 TOKEN_FILES_DIR='dict_dir/'
 NUM_FILES_TO_INDEX = 100
 
+TOKENS_INVALID = ['.', '..']
+
 def create_dict_dir():
   if not os.path.exists(TOKEN_FILES_DIR):
     os.makedirs(TOKEN_FILES_DIR)
@@ -48,7 +50,8 @@ def write_doc_id_to_file(token, doc_id):
 def get_list_of_files_to_index():
   file_list = os.listdir(documents_dir)
   file_list.sort(key=int)
-  return file_list[0:NUM_FILES_TO_INDEX]
+  # return file_list[0:NUM_FILES_TO_INDEX]
+  return file_list
 
 def get_list_of_token_files():
   file_list = os.listdir(TOKEN_FILES_DIR)
@@ -70,6 +73,7 @@ def insert_skip_pointers(l):
 def append_all_files_to_dict():
   dict_file_writer = open(dict_file, "w")
   postings_file_writer = open(postings_file, "w")
+  postings_file_writer.write(" ".join(get_list_of_files_to_index()) + "\n")
   token_file_list = get_list_of_token_files()
   for file_name in token_file_list:
     in_file = TOKEN_FILES_DIR + file_name
@@ -91,7 +95,8 @@ def index_docs(documents_dir, dict_file, postings_file):
       for l in f.readlines():
         token_list = get_tokens_from_line(l)
         for token in token_list:
-          write_doc_id_to_file(token, file_name)
+          if not token in TOKENS_INVALID:
+            write_doc_id_to_file(token, file_name)
 
   append_all_files_to_dict()
 

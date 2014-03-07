@@ -5,15 +5,22 @@ import getopt
 import os
 import re
 import Queue
+import string
+import nltk
 
 REGEX_STRING_ENCLOSED_BY_PARANTHESES = "(?<=\().*?(?=\))"
 DELIMITER_OR = " OR "
 DELIMITER_AND = " AND "
 PREFIX_NOT = "NOT "
+REGEX_PREFIX_NOT = "(?<=NOT ).*"
 PREFIX_PARANTHESIS = "PARANTHESIS_"
 REGEX_PREFIX_PARANTHESIS = "(?<=PARANTHESIS_).*"
+POINTER_DOCUMENTS_ALL = 0
 
 list_query_parantheses_results = []
+
+def get_list_of_all_doc_ids():
+  return get_doc_ids_from_postings_file_at_pointer(POINTER_DOCUMENTS_ALL)
 
 def usage():
   print "usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results"
@@ -57,7 +64,7 @@ def get_doc_ids_from_postings_file_at_pointer(file_pointer):
       doc_ids[i] = get_doc_id_from_doc_id_and_skip_pointer(doc_id)
     doc_ids[i] = int(doc_ids[i])
   postings_file_reader.close()
-  print doc_ids
+  # print doc_ids
   return doc_ids
 
 def write_to_output_file(line):
@@ -82,7 +89,7 @@ def execute_and_operation(operands):
   for i in range(1, len(operands)):
     list_results = list(set(list_results) & set(perform_query(operands[i].strip())))
   list_results.sort()
-  print list_results
+  # print list_results
   return list_results
 
 def execute_or_operation(operands):
@@ -90,32 +97,24 @@ def execute_or_operation(operands):
   for operand in operands:
     list_results = list_results + perform_query(operand.strip())
   list_results = sorted(list(set(list_results)))
-  print list_results
+  # print list_results
   return list_results
 
-def execute_not_operation(parent_list, to_be_excluded_list):
-  return [x for x in a if x not in b]
-
-# def split_query_into_tokens(query):
-#   query_tokens_list = re.split(' ', query)
-#   for token in query_tokens_list:
-#     if token.startswith('('):
-
-#   print query_tokens_list
-
-# def make_operation_queue_from_tokens_list(query_tokens_list):
-#   if are_brackets_present_in_query_tokens
+def execute_not_operation(operand):
+  list_doc_ids_all = get_doc_ids_from_postings_file_at_pointer(POINTER_DOCUMENTS_ALL)
+  list_results = []
+  list_operand_query_results = perform_query(operand)
+  for doc_id in list_doc_ids_all:
+    if doc_id not in list_operand_query_results:
+      list_results.append(doc_id)
+  list_results = sorted(list(set(list_results)))
+  # print list_results
+  return list_results
 
 def are_there_brackets_in_expression(expr):
   matches = re.findall(REGEX_STRING_ENCLOSED_BY_PARANTHESES, expr)
   if len(matches) > 0:
     return True
-
-# def get_binary_operation_queue(query):
-#   if are_there_brackets_in_expression(query):
-    
-  # query_tokens_list = split_query_into_tokens(query)
-  # operation_queue = make_operation_queue_from_tokens_list(query_tokens_list)
 
 def get_substrings_enclosed_in_brackets(str):
   return re.findall(REGEX_STRING_ENCLOSED_BY_PARANTHESES, str)
@@ -126,30 +125,47 @@ def get_index_of_bracketed_query(query):
   assert doesStringContainOnlyDigits(matches[0])
   return int(matches[0])
 
+def get_expression_in_front_of_NOT(query):
+  matches = re.findall(REGEX_PREFIX_NOT, query)
+  assert len(matches) == 1
+  return matches[0]
+
 def perform_query(query):
-  print query
+  # print query
   if are_there_brackets_in_expression(query):
     list_of_expressions_in_bracket = get_substrings_enclosed_in_brackets(query)
     for i in range(0, len(list_of_expressions_in_bracket)):
       expression = list_of_expressions_in_bracket[i]
       query = query.replace('(' + expression + ')', 'PARANTHESIS_' + str(i))
       list_query_parantheses_results.append(perform_query(expression.strip()))
-    perform_query(query)
+    return perform_query(query)
   elif DELIMITER_OR in query:
     list_sub_expressions_separated_by_OR = query.split(DELIMITER_OR)
     return execute_or_operation(list_sub_expressions_separated_by_OR)
   elif DELIMITER_AND in query:
     list_sub_expressions_separated_by_AND = query.split(DELIMITER_AND)
     return execute_and_operation(list_sub_expressions_separated_by_AND)
+  elif PREFIX_NOT in query:
+    expression_to_be_negated = (get_expression_in_front_of_NOT(query)).strip()
+    return execute_not_operation(expression_to_be_negated)
   elif PREFIX_PARANTHESIS in query:
     index_query_in_bracket_list = get_index_of_bracketed_query(query)
     return list_query_parantheses_results[index_query_in_bracket_list]
+  # else:
+  #   if query in dictionary:
+  #     postings_file_pointer_for_query_term = int(dictionary[query])
+  #     return get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
+  #   elif string.lower(query) in dictionary:
+  #     postings_file_pointer_for_query_term = int(dictionary[string.lower(query)])
+  #     return get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
+  #   elif stemmer.stem(string.lower(query)) in dictionary:
+  #     postings_file_pointer_for_query_term = int(dictionary[stemmer.stem(string.lower(query))])
+  #     return get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
+  #   else:
+  #     raise Exception('Query ' + query + ' is not present in dictionary')
   else:
-    if query in dictionary:
-      postings_file_pointer_for_query_term = int(dictionary[query])
-      return get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
-    else:
-      raise Exception('Query ' + query + ' is not present in dictionary')
+    postings_file_pointer_for_query_term = int(dictionary[stemmer.stem(string.lower(query))])
+    return get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
 
   # get_binary_operation_queue(query)
 
@@ -184,4 +200,5 @@ if query_file == None or dict_file == None or postings_file == None or output_fi
 
 dictionary = {}
 dictionary = store_dictionary_in_memory_and_return_it(dict_file)
+stemmer = nltk.stem.porter.PorterStemmer()
 perform_queries()
