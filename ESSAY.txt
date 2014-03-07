@@ -1,0 +1,58 @@
+1)
+Around 14,300 of the dictionary entries are numbers. This is easy to calculate because dictionary.txt is sorted and contains different entries on different lines. Apart from the first 30+ entries which belong to alphanumeric characters preceded by special characters, rest of the terms upto around line 14,300+ belong to terms which are either integers or floating point numbers. Since the total number of terms in our dictionary is just 35300, we can say that around 40% of the terms in our dictionary are numbers.
+In terms of memory usage and disk space, it does make sense to remove these numbers from the dictonary and postings list. We will save as much as 40% of the space required. However, we can also argue that including numbers is advantagous in many case, for example,
+(i) searching for events that happened on particular dates
+(ii) searching for error codes - a very common case for programmers; often when we face errors, we google the entire message including the error code
+(iii) searching for telephone numbers in a directory
+(iv) search for addresses if we are developing a yellow pages or google maps like application
+Thus, even though storing numbers adds an extra burden on the memory, we can't just completely remove them altogether because of their indexing value. Normalizing the numbers and then storing them can be a good tradeoff. The most intuitive way to normalize and reduce the heavy drain on memory is to define ranges like 100-200, 200-300 or 1-10, 10-20 and so on. The dictionary and postings file don't need to have a separate record for each numbers and can just contain redords for the different ranges. This can also be useful if we want to extend out search engine to handle numeric range queries (like 'Find files for case numbers between 500-600'). However, one needs to be careful here. If the range of each interval is too big, we might have too many numbers for each category adversely impacting the query time. If the range is very small, the dictionary might not reduce by much and still be a drain on the memory. The memory saving depends on the range selected and the actual occurence of numberic terms in the data. In our case, where most numbers occur in no more than two documents, the savings would be very substantial. If we assume that each number occurs mostly once in the entire dataset and the numbers are pretty equally distributed throughout our dataset, then we can save upto 25% of dictionay space.
+
+2)
+Stop words are few in number. I made my own list of stop words - {a, an, the, is, are, at, for, in, am, ...}. Since the length of this list was only around 30, this caused a minimal reduction in the size of the dictionary. However, in the postings file, each of these stop words had greater than 1000 doc ids associated with it. Thus, removing these stop words caused a huge saving there.
+In this assignment, removing stop words obviously doesn't work for search. Since only Boolean queries are allowed, if someone searches for <stop_word? or <stop_word> AND ... etc., we will be forced to give 0 results as answer. In a real search engine where non boolean queries are allowed, removing stop words might actually be a good idea. This is because including stop words could give a huge list of documents just because stop words occur at most places. Or alternatively, one could use tf-idf weighting which reduces the weightage of stop words by default.
+
+3)
+Some of the problems with sent_tokenize and word_tokenize are -
+
+Problem - It often does not parse the dot (.) after words like Mrs or Dr or etc correctly. sent_tokenize understands it as a full stop and incorrectly terminates sentence there, especially if the following word is in upper case.
+Example - 
+'''
+(Chapter 16)
+A clam for supper? a cold clam; is THAT what you mean, Mrs. Hussey?" says I, "but
+that's a rather cold and clammy reception in the winter time, ain't it, Mrs. Hussey?"
+'''
+--------->
+"A clam for supper?
+-----
+a cold clam; is THAT what you mean, Mrs.
+-----
+Hussey?
+-----
+" says I, "but that\'s a rather cold and clammy reception in the winter time, ain\'t it, Mrs.
+-----
+Hussey?
+-----
+"
+
+Solution - Since words like Dr and Mrs are special, we can add some rules to the tokenizer to make it understand that the dot at the end is not a full stop. I could supply a list of abbreviations to the tokenizer -
+
+#Code snippet derived from StackOverflow
+from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
+punkt_param = PunktParameters()
+punkt_param.abbrev_types = set(['dr', 'vs', 'mr', 'mrs', 'prof', 'inc'])
+sentence_splitter = PunktSentenceTokenizer(punkt_param)
+text = "is THAT what you mean, Mrs. Hussey?"
+sentences = sentence_splitter.tokenize(text)
+
+Problem - When working with scientific text, the tokenizer doesn't understand abbreviations like Fig., Eq., Ref., al. and treats them as sentence boundaries.
+
+Solution - The approach of adding these abbreviations separately works. Another workaround can be to use PunktSentenceTokenizer in addition to the above two.
+
+Problem - nltk.word_tokenize returns a list of words and punctuation. We need only the words.
+
+Solution - I found it most effective to use the Python filter keyword. For example,
+from nltk.tokenize import word_tokenize, sent_tokenize
+text = '''It is a blue, small, and extraordinary ball. Like no other'''
+tokens = [word for sent in sent_tokenize(text) for word in word_tokenize(sent)]
+print filter(lambda word: word not in ',-', tokens)
+The above technique was also learnt after looking up StackOverflow.
