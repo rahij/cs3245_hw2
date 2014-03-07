@@ -22,13 +22,8 @@ def get_list_of_all_doc_ids():
 def usage():
   print "usage: " + sys.argv[0] + " -d dictionary-file -p postings-file -q file-of-queries -o output-file-of-results"
 
-def doesStringContainOnlyDigits(inputString):
-  return all(char.isdigit() for char in inputString)
-
 def parse_dictionary_file_entry(entry):
   file_entry_list_by_whitespace = entry.split()
-  assert len(file_entry_list_by_whitespace) == 2
-  assert doesStringContainOnlyDigits(file_entry_list_by_whitespace[1])
   return file_entry_list_by_whitespace
 
 def store_entry_in_dictionary(entry):
@@ -115,8 +110,6 @@ def get_substrings_enclosed_in_brackets(str):
 
 def get_index_of_bracketed_query(query):
   matches = re.findall(REGEX_PREFIX_PARANTHESIS, query)
-  assert len(matches) == 1
-  assert doesStringContainOnlyDigits(matches[0])
   return int(matches[0])
 
 def get_expression_in_front_of_NOT(query):
