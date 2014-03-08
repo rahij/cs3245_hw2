@@ -15,6 +15,7 @@ REGEX_PREFIX_NOT = "(?<=NOT ).*"
 PREFIX_PARANTHESIS = "PARANTHESIS_"
 REGEX_PREFIX_PARANTHESIS = "(?<=PARANTHESIS_).*"
 POINTER_DOCUMENTS_ALL = 0
+MAX_CACHE_SIZE=100000
 
 def get_list_of_all_doc_ids():
   return get_doc_ids_from_postings_file_at_pointer(POINTER_DOCUMENTS_ALL)
@@ -85,31 +86,63 @@ def get_doc_ids_for_token(token):
     doc_ids = get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
   return doc_ids
 
+def merge_lists(p1, p2):
+  answer = []
+  idx1 = 0
+  idx2 = 0
+  while idx1 < len(p1) and idx2 < len(p2) :
+    doc_id1 = (p1[idx1])
+    doc_id2 = (p2[idx2])
+    if doc_id1 == doc_id2:
+      answer.append(doc_id1)
+      idx1 += 1
+      idx2 += 1
+    elif int(doc_id1) < int(doc_id2):
+      idx1 += 1
+    else:
+      idx2 += 1
+  return answer
+
+def union_lists(p1, p2):
+  answer = []
+  idx1 = 0
+  idx2 = 0
+
+  while idx1 < len(p1) and idx2 < len(p2) :
+    doc_id1 = get_doc_id_from_doc_id_and_skip_pointer(p1[idx1])
+    doc_id2 = get_doc_id_from_doc_id_and_skip_pointer(p2[idx2])
+    if doc_id1 == doc_id2:
+      answer.append(doc_id1)
+      answer.append(doc_id2)
+      idx1 += 1
+      idx2 += 1
+    elif doc_id1 < doc_id2:
+      answer.append(doc_id1)
+      idx1 += 1
+
+    elif doc_id2 < doc_id1:
+      answer.append(doc_id2)
+      idx2 += 1
+  return answer
+
 def execute_and_operation(operands):
   assert len(operands) > 1
   list_results = perform_query(operands[0].strip())
   for i in range(1, len(operands)):
-    list_results = list(set(list_results) & set(perform_query(operands[i].strip())))
-  list_results.sort(key=int)
+    list_results = merge_lists(list_results, perform_query(operands[i].strip()))
   return list_results
 
 def execute_or_operation(operands):
   list_results = []
   for operand in operands:
-    list_results = list_results + perform_query(operand.strip())
-  list_results = list(set(list_results))
-  list_results.sort(key=int)
+    list_results = union_lists(list_results, perform_query(operand.strip()))
   return list_results
 
 def execute_not_operation(operand):
-  list_doc_ids_all = get_doc_ids_from_postings_file_at_pointer(POINTER_DOCUMENTS_ALL)
+  global all_docs
   list_results = []
-  list_operand_query_results = perform_query(operand)
-  for doc_id in list_doc_ids_all:
-    if doc_id not in list_operand_query_results:
-      list_results.append(doc_id)
-  list_results = list(set(list_results))
-  list_results.sort(key=int)
+  operand_query_results = set(perform_query(operand))
+  list_results = [doc for doc in all_docs if doc not in operand_query_results]
   return list_results
 
 def are_there_brackets_in_expression(expr):
@@ -155,7 +188,14 @@ def perform_query(query):
     return list_query_parantheses_results[index_query_in_bracket_list]
   elif stemmer.stem(string.lower(query)) in dictionary:
     postings_file_pointer_for_query_term = int(dictionary[stemmer.stem(string.lower(query))])
-    return get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
+    if query not in cache:
+      global current_cache_size
+      if current_cache_size > MAX_CACHE_SIZE:
+        del cache[cache.itervalues().next()]
+        current_cache_size = current_cache_size - 1
+      cache[query] = get_doc_ids_from_postings_file_at_pointer(postings_file_pointer_for_query_term)
+      current_cache_size = current_cache_size + 1
+    return cache[query]
   else:
     return []
 
@@ -171,7 +211,7 @@ def perform_queries():
 
 dict_file = postings_file = query_file = output_file = None
 try:
-  opts, args = getopt.getopt(sys.argv[1:], 'd:p:q:o:')
+  opts, args = getopt.getopt(sys.argv[1:], 'd:p:q:r:')
 except getopt.GetoptError, err:
   usage()
   sys.exit(2)
@@ -182,7 +222,7 @@ for o, a in opts:
     postings_file = a
   elif o == '-q':
     query_file = a
-  elif o == '-o':
+  elif o == '-r':
     output_file = a
   else:
     assert False, "unhandled option"
@@ -191,7 +231,10 @@ if query_file == None or dict_file == None or postings_file == None or output_fi
   sys.exit(2)
 
 dictionary = {}
+cache = {}
+current_cache_size = 0
 list_query_parantheses_results = []
 dictionary = store_dictionary_in_memory_and_return_it(dict_file)
 stemmer = nltk.stem.porter.PorterStemmer()
+all_docs = get_doc_ids_from_postings_file_at_pointer(POINTER_DOCUMENTS_ALL)
 perform_queries()
