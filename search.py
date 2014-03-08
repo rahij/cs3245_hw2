@@ -109,8 +109,8 @@ def union_lists(p1, p2):
   idx2 = 0
 
   while idx1 < len(p1) and idx2 < len(p2) :
-    doc_id1 = get_doc_id_from_doc_id_and_skip_pointer(p1[idx1])
-    doc_id2 = get_doc_id_from_doc_id_and_skip_pointer(p2[idx2])
+    doc_id1 = (p1[idx1])
+    doc_id2 = (p2[idx2])
     if doc_id1 == doc_id2:
       answer.append(doc_id1)
       answer.append(doc_id2)
